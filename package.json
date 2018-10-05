@@ -1,0 +1,38 @@
+{
+  "name": "estree-analyzer",
+  "version": "0.0.1",
+  "description": "Static analysis of JavaScript ASTs in ESTree format",
+  "main": "index.js",
+  "files": [
+    "README.md",
+    "src"
+  ],
+  "scripts": {
+    "docs": "jsdoc2md --heading-depth 3 -t jsdoc2md/README.hbs index.js src/*.js > README.md",
+    "prepublishOnly": "npm run docs",
+    "prepush": "npm test",
+    "test": "mocha test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trevorr/estree-analyzer.git"
+  },
+  "keywords": [
+    "ast",
+    "estree"
+  ],
+  "author": "Trevor Robinson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/trevorr/estree-analyzer/issues"
+  },
+  "homepage": "https://github.com/trevorr/estree-analyzer#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "acorn": "^6.0.2",
+    "chai": "^4.2.0",
+    "husky": "^1.0.1",
+    "jsdoc-to-markdown": "^4.0.1",
+    "mocha": "^5.2.0"
+  }
+}

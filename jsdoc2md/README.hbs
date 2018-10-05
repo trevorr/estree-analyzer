@@ -1,0 +1,59 @@
+# estree-analyzer
+
+Performs basic static analysis of JavaScript ASTs in [ESTree](https://github.com/estree/estree) format.
+
+## Installation
+
+```sh
+npm install estree-analyzer
+```
+
+## Usage
+
+```js
+const acorn = require('acorn');
+const analyzer = require('estree-analyzer');
+
+let expr = acorn.parseExpressionAt(`'1 + 2 * 3 = ' + (1 + 2 * 3)`);
+let analysis = analyzer.analyze(expr);
+console.log(JSON.stringify(analysis, null, 2));
+
+expr = acorn.parseExpressionAt(`obj && obj.nested && obj.nested.prop`);
+let scope = new analyzer.Scope();
+analysis = analyzer.analyze(expr, scope);
+console.log(JSON.stringify(scope.members, null, 2));
+```
+
+The code above outputs the following:
+
+```json
+{
+  "type": "string",
+  "value": "1 + 2 * 3 = 7"
+}
+{
+  "obj": {
+    "name": "obj",
+    "type": "object",
+    "members": {
+      "nested": {
+        "name": "nested",
+        "type": "object",
+        "members": {
+          "prop": {
+            "name": "prop"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+## API Reference
+
+{{>main}}
+
+## License
+
+`estree-analyzer` is available under the [ISC license](LICENSE).
