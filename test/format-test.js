@@ -52,13 +52,27 @@ f(3);
 `;
     const ast = acorn.parse(input);
     let output = '';
-
-    function write(s) {
-      output += s;
-    }
-
     format(ast, {
-      write
+      write: s => output += s
+    });
+    expect(output).to.equal(input);
+  });
+  it('round-trips a mess of imports and exports', function () {
+    const input = `import i1, { i2, i3 as i4 } from 'm1';
+import i5, * as i6 from 'm2';
+import 'm3';
+export * from 'm4';
+export { i7 } from 'm5';
+export { i1, i2 };
+export const e1 = 1;
+export default 1 + 2;
+`;
+    const ast = acorn.parse(input, {
+      sourceType: 'module'
+    });
+    let output = '';
+    format(ast, {
+      write: s => output += s
     });
     expect(output).to.equal(input);
   });

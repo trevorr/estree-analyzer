@@ -134,19 +134,122 @@ function format(ast, options = {}) {
 
   walk(ast, {}, {
 
-    // TODO: imports
+    // imports
 
-    ImportDeclaration() {},
-    ImportSpecifier() {},
-    ImportDefaultSpecifier() {},
-    ImportNamespaceSpecifier() {},
+    ImportDeclarationBefore(node, state, visit) {
+      fmt.emitLeading('import');
+      fmt.emitSpace();
+      if (node.specifiers.length > 0) {
+        let first = true;
+        let gotNamed = false;
+        for (const spec of node.specifiers) {
+          if (!first) {
+            fmt.emitTrailing(',');
+            fmt.emitSpace();
+          } else {
+            first = false;
+          }
+          if (spec.type === 'ImportSpecifier' && !gotNamed) {
+            gotNamed = true;
+            fmt.emitLeading('{');
+            fmt.emitSpace();
+          }
+          visit(spec, state);
+        }
+        if (gotNamed) {
+          fmt.emitSpace();
+          fmt.emitTrailing('}');
+        }
+        fmt.emitSpace();
+        fmt.emitLeading('from');
+        fmt.emitSpace();
+      }
+      visit(node.source, state);
+      fmt.emitSemi();
+      fmt.emitNewline();
+      return false;
+    },
+    ImportSpecifierBefore(node) {
+      fmt.emit(node.imported.name);
+      if (node.local.name !== node.imported.name) {
+        fmt.emitSpace();
+        fmt.emitLeading('as');
+        fmt.emitSpace();
+        fmt.emit(node.local.name);
+      }
+      return false;
+    },
+    ImportDefaultSpecifierBefore(node) {
+      fmt.emit(node.local.name);
+      return false;
+    },
+    ImportNamespaceSpecifierBefore(node) {
+      fmt.emitLeading('*');
+      fmt.emitSpace();
+      fmt.emitLeading('as');
+      fmt.emitSpace();
+      fmt.emit(node.local.name);
+      return false;
+    },
 
-    // TODO: exports
+    // exports
 
-    ExportNamedDeclaration() {},
-    ExportSpecifier() {},
-    ExportDefaultDeclaration() {},
-    ExportAllDeclaration() {},
+    ExportNamedDeclarationBefore(node, state, visit) {
+      fmt.emitLeading('export');
+      fmt.emitSpace();
+      if (node.declaration) {
+        visit(node.declaration, state);
+      } else {
+        fmt.emitLeading('{');
+        fmt.emitSpace();
+        emitList(node.specifiers, state, visit);
+        fmt.emitSpace();
+        fmt.emitTrailing('}');
+        if (node.source) {
+          fmt.emitSpace();
+          fmt.emitLeading('from');
+          fmt.emitSpace();
+          visit(node.source, state);
+        }
+        fmt.emitSemi();
+        fmt.emitNewline();
+      }
+      return false;
+    },
+    ExportSpecifierBefore(node) {
+      fmt.emit(node.local.name);
+      if (node.exported.name !== node.local.name) {
+        fmt.emitSpace();
+        fmt.emitLeading('as');
+        fmt.emitSpace();
+        fmt.emit(node.exported.name);
+      }
+      return false;
+    },
+    ExportDefaultDeclarationBefore(node, state, visit) {
+      fmt.emitLeading('export');
+      fmt.emitSpace();
+      fmt.emitLeading('default');
+      fmt.emitSpace();
+      visit(node.declaration, state);
+      if (!node.declaration.type.endsWith('Declaration')) {
+        fmt.emitSemi();
+        fmt.emitNewline();
+      }
+      return false;
+    },
+    ExportAllDeclarationBefore(node, state, visit) {
+      fmt.emitLeading('export');
+      fmt.emitSpace();
+      fmt.emit('*');
+      fmt.emitSpace();
+      fmt.emitLeading('from');
+      fmt.emitSpace();
+      visit(node.source, state);
+      fmt.emitSemi();
+      fmt.emitNewline();
+      return false;
+    },
 
     // variables
 
