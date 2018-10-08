@@ -136,17 +136,17 @@ function format(ast, options = {}) {
 
     // TODO: imports
 
-    ImportDeclaration(node, state) {},
-    ImportSpecifier(node, state) {},
-    ImportDefaultSpecifier(node, state) {},
-    ImportNamespaceSpecifier(node, state) {},
+    ImportDeclaration() {},
+    ImportSpecifier() {},
+    ImportDefaultSpecifier() {},
+    ImportNamespaceSpecifier() {},
 
     // TODO: exports
 
-    ExportNamedDeclaration(node, state) {},
-    ExportSpecifier(node, state) {},
-    ExportDefaultDeclaration(node, state) {},
-    ExportAllDeclaration(node, state) {},
+    ExportNamedDeclaration() {},
+    ExportSpecifier() {},
+    ExportDefaultDeclaration() {},
+    ExportAllDeclaration() {},
 
     // variables
 

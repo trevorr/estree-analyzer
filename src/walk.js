@@ -183,7 +183,7 @@ walkers.BlockStatement = (node, state, visit) => {
     visit(stmt, state, StatementGroup);
   }
 };
-walkers.WithStatement = () => {
+walkers.WithStatement = (node, state, visit) => {
   visit(node.object, state, ExpressionGroup);
   visit(node.body, state, StatementGroup);
 };

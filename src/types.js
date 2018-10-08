@@ -430,7 +430,7 @@ function transformFunction(type, fn) {
       result.returns = returns;
     }
     if (params !== type.params) {
-      results.params = params;
+      result.params = params;
     }
     return result;
   }
