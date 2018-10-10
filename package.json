@@ -10,6 +10,7 @@
   "scripts": {
     "build": "babel src --out-dir lib",
     "docs": "jsdoc2md -c jsdoc2md/config.json -f 'src/**/*.mjs' --heading-depth 3 -t jsdoc2md/README.hbs > README.md",
+    "lint": "eslint 'src/**/*.mjs'",
     "prepublishOnly": "npm run build && npm run docs",
     "prepush": "npm test",
     "test": "mocha --require @babel/register --recursive 'test/**/*.mjs'"

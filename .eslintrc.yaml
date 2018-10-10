@@ -2,7 +2,7 @@ extends:
   - eslint:recommended
 parserOptions:
   ecmaVersion: 2018
-  sourceType: script
+  sourceType: module
 env:
   node: true
   es6: true
@@ -10,4 +10,4 @@ rules:
   no-unused-vars:
     - error
     - ignoreRestSiblings: true
-    - argsIgnorePattern: ^_
+      argsIgnorePattern: ^_
