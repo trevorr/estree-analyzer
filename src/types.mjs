@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Type definition module.
  * @module types
@@ -30,7 +28,7 @@
  * @enum {string}
  * @alias TypeKind
  */
-const TypeKind = {
+export const TypeKind = {
   // built-in types
   'undefined': 'undefined',
   'null': 'null',
@@ -76,7 +74,7 @@ Object.freeze(TypeKind);
  * 
  * @param {?Type} [elements] an optional element type
  */
-function arrayOf(elements) {
+export function arrayOf(elements) {
   return !elements ? 'array' : {
     kind: 'array',
     elements
@@ -89,7 +87,7 @@ function arrayOf(elements) {
  * @param {*} v the value for which to obtain the type kind
  * @returns {TypeKind} the kind of value
  */
-function kindOf(v) {
+export function kindOf(v) {
   return v !== null ? (Array.isArray(v) ? 'array' : typeof v) : 'null';
 }
 
@@ -99,7 +97,7 @@ function kindOf(v) {
  * @param {(Type|undefined)} type a type
  * @returns {(string|undefined)} the kind of type
  */
-function getKind(type) {
+export function getKind(type) {
   return typeof type === 'object' ? (Array.isArray(type) ? 'union' : type.kind) : type;
 }
 
@@ -111,7 +109,7 @@ function getKind(type) {
  * @param {string} kind the kind of type
  * @returns {boolean} true if an only if the type has the given kind
  */
-function hasKind(type, kind) {
+export function hasKind(type, kind) {
   return Array.isArray(type) && type !== 'union' ?
     type.some(t => getKind(t) === kind) : getKind(type) === kind;
 }
@@ -122,7 +120,7 @@ function hasKind(type, kind) {
  * @param {(Type|undefined)} type a type
  * @returns {boolean} true if and only if the given type is always falsy
  */
-function isFalsy(type) {
+export function isFalsy(type) {
   return Array.isArray(type) ?
     type.length > 0 && type.every(isFalsy) : ['undefined', 'null'].includes(getKind(type));
 }
@@ -134,7 +132,7 @@ function isFalsy(type) {
  * @param {(Type|undefined)} type a type
  * @returns {boolean} true if and only if the given type is always truthy
  */
-function isTruthy(type) {
+export function isTruthy(type) {
   return Array.isArray(type) ?
     type.length > 0 && type.every(isTruthy) : ['symbol', 'object', 'function', 'array'].includes(getKind(type));
 }
@@ -145,7 +143,7 @@ function isTruthy(type) {
  * @param {(Type|undefined)} type a type
  * @returns {boolean} true if and only if the given type is a union
  */
-function isUnion(type) {
+export function isUnion(type) {
   return Array.isArray(type) || (!!type && type.kind === 'union');
 }
 
@@ -159,7 +157,7 @@ function isUnion(type) {
  * @param {(Type|undefined)} type a type
  * @returns {Type[]} an array of alternative types
  */
-function getUnionTypes(type) {
+export function getUnionTypes(type) {
   return Array.isArray(type) ? type : type ? type.anyOf || [type] : [];
 }
 
@@ -170,7 +168,7 @@ function getUnionTypes(type) {
  * @param {(Type|undefined)} source the source type
  * @returns {boolean} true if and only if source is assignable to target
  */
-function isAssignable(target, source) {
+export function isAssignable(target, source) {
   // unions are handled recursively, with source unions followed by target unions:
   // [a, b, c] <- [b, c]
   //   [a, b, c] <- b
@@ -225,7 +223,7 @@ function isAssignable(target, source) {
  * @param {(Type|undefined)} source the source type
  * @returns {boolean} true if and only if source is not assignable to target
  */
-function isNotAssignable(target, source) {
+export function isNotAssignable(target, source) {
   return !!target && !isAssignable(target, source);
 }
 
@@ -237,7 +235,7 @@ function isNotAssignable(target, source) {
  * @param {(Type|undefined)} b another type
  * @returns {(Type|undefined)} the reduced union type `a | b`
  */
-function union(a, b) {
+export function union(a, b) {
   if (a && b) {
     if (isAssignable(a, b)) {
       return a;
@@ -311,7 +309,7 @@ function union(a, b) {
  * @param {(Type|undefined)} type a type
  * @returns {string} a string representation the type
  */
-function formatType(type, contextPrecedence = 0) {
+export function formatType(type, contextPrecedence = 0) {
   let result;
   let precedence;
   if (isUnion(type)) {
@@ -355,7 +353,7 @@ function formatParam(param) {
  * @param {(Type|undefined)} type a type
  * @returns {(TypeObject|undefined)} a canonical type
  */
-function toCanonical(type) {
+export function toCanonical(type) {
   return Array.isArray(type) ? {
       kind: 'union',
       anyOf: type.map(toCanonical)
@@ -382,7 +380,7 @@ function toCanonical(type) {
  * @param {(Type|undefined)} type a type
  * @returns {(TypeObject|Type[]|undefined)} a shorthand type
  */
-function toShorthand(type) {
+export function toShorthand(type) {
   if (type && type.kind) {
     switch (type.kind) {
       case 'function':
@@ -470,21 +468,3 @@ function arrayElementsEqual(a, b) {
   // assumes same length
   return a.every((v, i) => v === b[i]);
 }
-
-module.exports = {
-  TypeKind,
-  arrayOf,
-  kindOf,
-  getKind,
-  hasKind,
-  isFalsy,
-  isTruthy,
-  isUnion,
-  getUnionTypes,
-  isAssignable,
-  isNotAssignable,
-  union,
-  formatType,
-  toCanonical,
-  toShorthand
-};

@@ -1,9 +1,7 @@
-'use strict';
+import { walk } from '../walk.mjs';
+import { newFunction } from '../model/function.mjs';
 
-const walk = require('../walk');
-const functionModel = require('../model/function');
-
-function bindGlobalDeclarations(scriptAst, execContext) {
+export function bindGlobalDeclarations(scriptAst, execContext) {
 
   const env = execContext.variableEnvironment;
   const envRec = env.record;
@@ -104,7 +102,7 @@ function bindGlobalDeclarations(scriptAst, execContext) {
   // create global function bindings in declaration order
   while ((funcDecl = funcsToInit.shift())) {
     const name = funcDecl.id.name;
-    const model = functionModel.newFunction(execContext.realm, env, funcDecl, execContext.strict);
+    const model = newFunction(execContext.realm, env, funcDecl, execContext.strict);
     envRec.createGlobalFunctionBinding(name, model, false);
   }
 
@@ -137,5 +135,3 @@ function bindGlobalDeclarations(scriptAst, execContext) {
 function isLexicalDeclaration(decl) {
   return decl.kind === 'let' || decl.kind === 'const' || decl.type === 'ClassDeclaration';
 }
-
-module.exports = bindGlobalDeclarations;

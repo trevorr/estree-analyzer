@@ -1,18 +1,16 @@
-'use strict';
+import assert from 'assert';
+import { ThisMode } from './function.mjs';
 
-const assert = require('assert');
-const functionModel = require('./function');
-
-class LexicalEnvironment {
+export class LexicalEnvironment {
   constructor(record, outer = null) {
     this.record = record;
     this.outer = outer;
   }
 }
 
-class EnvironmentRecord {}
+export class EnvironmentRecord {}
 
-class DeclarativeEnvironmentRecord extends EnvironmentRecord {
+export class DeclarativeEnvironmentRecord extends EnvironmentRecord {
   constructor() {
     super();
     this.bindings = {};
@@ -95,7 +93,7 @@ class DeclarativeEnvironmentRecord extends EnvironmentRecord {
   }
 }
 
-class ObjectEnvironmentRecord extends EnvironmentRecord {
+export class ObjectEnvironmentRecord extends EnvironmentRecord {
   constructor(object, withEnvironment) {
     super();
     this.object = object;
@@ -170,7 +168,7 @@ class ObjectEnvironmentRecord extends EnvironmentRecord {
   }
 }
 
-class GlobalEnvironmentRecord extends EnvironmentRecord {
+export class GlobalEnvironmentRecord extends EnvironmentRecord {
   constructor(objectRecord, globalThis) {
     super();
     this.objectRecord = objectRecord;
@@ -296,17 +294,17 @@ class GlobalEnvironmentRecord extends EnvironmentRecord {
   }
 }
 
-const BindingStatus = {
+export const BindingStatus = {
   Lexical: 'lexical',
   Initialized: 'initialized',
   Uninitialized: 'uninitialized'
 }
 
-class FunctionEnvironmentRecord extends DeclarativeEnvironmentRecord {
+export class FunctionEnvironmentRecord extends DeclarativeEnvironmentRecord {
   constructor(functionObject, newTarget) {
     super();
     this.functionObject = functionObject;
-    this.thisBindingStatus = functionObject.thisMode === functionModel.ThisMode.Lexical ?
+    this.thisBindingStatus = functionObject.thisMode === ThisMode.Lexical ?
       BindingStatus.Lexical : BindingStatus.Uninitialized;
     this.thisValue = undefined;
     this.homeObject = functionObject.homeObject;
@@ -340,7 +338,7 @@ class FunctionEnvironmentRecord extends DeclarativeEnvironmentRecord {
   }
 }
 
-class ModuleEnvironmentRecord extends DeclarativeEnvironmentRecord {
+export class ModuleEnvironmentRecord extends DeclarativeEnvironmentRecord {
   getBindingValue(name) {
     const binding = this.bindings[name];
     // assert(binding);
@@ -384,43 +382,28 @@ class ModuleEnvironmentRecord extends DeclarativeEnvironmentRecord {
   }
 }
 
-function newDeclarativeEnvironment(outer) {
+export function newDeclarativeEnvironment(outer) {
   const record = new DeclarativeEnvironmentRecord();
   return new LexicalEnvironment(record, outer);
 }
 
-function newObjectEnvironment(object, outer) {
+export function newObjectEnvironment(object, outer) {
   const record = new ObjectEnvironmentRecord(object, true);
   return new LexicalEnvironment(record, outer);
 }
 
-function newGlobalEnvironment(globalObject, thisValue) {
+export function newGlobalEnvironment(globalObject, thisValue) {
   const objectRecord = new ObjectEnvironmentRecord(globalObject, false);
   const record = new GlobalEnvironmentRecord(objectRecord, thisValue);
   return new LexicalEnvironment(record);
 }
 
-function newFunctionEnvironment(functionObject, newTarget) {
+export function newFunctionEnvironment(functionObject, newTarget) {
   const record = new FunctionEnvironmentRecord(functionObject, newTarget);
   return new LexicalEnvironment(record, functionObject.environment);
 }
 
-function newModuleEnvironment(outer) {
+export function newModuleEnvironment(outer) {
   const record = new ModuleEnvironmentRecord();
   return new LexicalEnvironment(record, outer);
 }
-
-module.exports = {
-  LexicalEnvironment,
-  EnvironmentRecord,
-  DeclarativeEnvironmentRecord,
-  ObjectEnvironmentRecord,
-  GlobalEnvironmentRecord,
-  FunctionEnvironmentRecord,
-  ModuleEnvironmentRecord,
-  newDeclarativeEnvironment,
-  newObjectEnvironment,
-  newGlobalEnvironment,
-  newFunctionEnvironment,
-  newModuleEnvironment
-};

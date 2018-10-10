@@ -1,12 +1,10 @@
-'use strict';
-
 /**
  * AST walker module.
  * @module walk
  * @private
  */
 
-function walk(ast, state, visitors, override) {
+export function walk(ast, state, visitors, override) {
   // track ancestors if caller provides an array in state
   const ancestors = state && state.ancestors;
 
@@ -420,5 +418,3 @@ walkers.RestElement = (node, state, visit) =>
   visit(node.argument, state, Pattern);
 
 function ignore() {}
-
-module.exports = walk;

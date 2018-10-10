@@ -1,10 +1,8 @@
-'use strict';
+import { walk } from '../walk.mjs';
+import { newDeclarativeEnvironment } from '../model/environment.mjs';
+import { newFunction, ThisMode } from '../model/function.mjs';
 
-const walk = require('../walk');
-const environmentModel = require('../model/environment');
-const functionModel = require('../model/function');
-
-function bindFunctionDeclarations(func, args, execContext) {
+export function bindFunctionDeclarations(func, args, execContext) {
 
   const parameterNames = new Set();
   let hasDuplicates = false;
@@ -125,7 +123,7 @@ function bindFunctionDeclarations(func, args, execContext) {
   // determine whether an `arguments` object is needed
   const argumentsName = 'arguments';
   const argumentsObjectNeeded =
-    func.thisMode !== functionModel.ThisMode.Lexical &&
+    func.thisMode !== ThisMode.Lexical &&
     !parameterNames.has(argumentsName) &&
     !hasParameterExpressions &&
     !declaredNames.has(argumentsName);
@@ -173,7 +171,7 @@ function bindFunctionDeclarations(func, args, execContext) {
     varEnv = env;
     varEnvRec = envRec;
   } else {
-    varEnv = environmentModel.newDeclarativeEnvironment(env);
+    varEnv = newDeclarativeEnvironment(env);
     varEnvRec = varEnv.record;
     execContext.variableEnvironment = varEnv;
     for (const varName of varNames.values()) {
@@ -187,7 +185,7 @@ function bindFunctionDeclarations(func, args, execContext) {
   }
 
   // non-strict functions have separate lexical environment for direct eval
-  const lexEnv = strict ? varEnv : environmentModel.newDeclarativeEnvironment(varEnv);
+  const lexEnv = strict ? varEnv : newDeclarativeEnvironment(varEnv);
   const lexEnvRec = lexEnv.record;
   execContext.lexicalEnvironment = lexEnv;
 
@@ -204,7 +202,7 @@ function bindFunctionDeclarations(func, args, execContext) {
   // bind functions
   for (const funcDecl of funcsToInit) {
     const name = funcDecl.id.name;
-    const model = functionModel.newFunction(execContext.realm, lexEnv, funcDecl, strict);
+    const model = newFunction(execContext.realm, lexEnv, funcDecl, strict);
     varEnvRec.setMutableBinding(name, model, false);
   }
 }
@@ -222,5 +220,3 @@ function createMappedArgumentsObject(args) {
 function isLexicalDeclaration(decl) {
   return decl.kind === 'let' || decl.kind === 'const' || decl.type === 'ClassDeclaration';
 }
-
-module.exports = bindFunctionDeclarations;

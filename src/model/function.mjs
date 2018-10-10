@@ -1,12 +1,10 @@
-'use strict';
-
-const ThisMode = {
+export const ThisMode = {
   Lexical: 'lexical',
   Strict: 'strict',
   Global: 'global'
 };
 
-class Function {
+export class Function {
   constructor(realm, environment, formalParameters, body, strict, arrow) {
     this.realm = realm;
     this.environment = environment;
@@ -18,7 +16,7 @@ class Function {
   }
 }
 
-function newFunction(realm, environment, ast, withinStrict = false) {
+export function newFunction(realm, environment, ast, withinStrict = false) {
   const body = ast.body.body;
   const strict = withinStrict ||
     (body.length >= 1 && !!body[0].expression && body[0].expression.value === 'use strict');
@@ -29,9 +27,3 @@ function newFunction(realm, environment, ast, withinStrict = false) {
   }
   return result;
 }
-
-module.exports = {
-  Function,
-  ThisMode,
-  newFunction
-};

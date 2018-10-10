@@ -1,11 +1,10 @@
-'use strict';
+import { expect } from 'chai';
 
-const chai = require('chai');
-const expect = chai.expect;
+import { bindGlobalDeclarations } from '../../src/analyses/bindGlobalDeclarations.mjs';
+import { newExecutionContext } from '../../src/model/context.mjs';
+import { newRealm } from '../../src/model/realm.mjs';
+
 const acorn = require('acorn');
-const bindGlobalDeclarations = require('../../src/analyses/bindGlobalDeclarations');
-const contextModel = require('../../src/model/context');
-const realmModel = require('../../src/model/realm');
 
 describe('bindGlobalDeclarations', function () {
   it('seems to work', function () {
@@ -32,8 +31,8 @@ function f() { v2; var vf2; }
 var f;
 `;
     const ast = acorn.parse(input);
-    const realm = realmModel.newRealm({});
-    const context = contextModel.newExecutionContext(realm);
+    const realm = newRealm({});
+    const context = newExecutionContext(realm);
     bindGlobalDeclarations(ast, context);
     expect(context.variableEnvironment.record.getBoundNames()).to.have.members([
       'C',

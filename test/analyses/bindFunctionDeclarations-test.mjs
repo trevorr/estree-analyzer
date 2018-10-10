@@ -1,13 +1,12 @@
-'use strict';
+import { expect } from 'chai';
 
-const chai = require('chai');
-const expect = chai.expect;
+import { bindFunctionDeclarations } from '../../src/analyses/bindFunctionDeclarations.mjs';
+import { newExecutionContext } from '../../src/model/context.mjs';
+import { newFunctionEnvironment } from '../../src/model/environment.mjs';
+import { newFunction } from '../../src/model/function.mjs';
+import { newRealm } from '../../src/model/realm.mjs';
+
 const acorn = require('acorn');
-const bindFunctionDeclarations = require('../../src/analyses/bindFunctionDeclarations');
-const contextModel = require('../../src/model/context');
-const environmentModel = require('../../src/model/environment');
-const functionModel = require('../../src/model/function');
-const realmModel = require('../../src/model/realm');
 
 describe('bindFunctionDeclarations', function () {
   it('seems to work', function () {
@@ -31,10 +30,10 @@ function f(x) {
     const funcAst = acorn.parseExpressionAt(funcSource);
     const callSource = `f(1)`;
     const callAst = acorn.parseExpressionAt(callSource);
-    const realm = realmModel.newRealm({});
-    const context = contextModel.newExecutionContext(realm);
-    const func = functionModel.newFunction(realm, context.variableEnvironment, funcAst, context.strict);
-    context.setEnvironment(environmentModel.newFunctionEnvironment(func));
+    const realm = newRealm({});
+    const context = newExecutionContext(realm);
+    const func = newFunction(realm, context.variableEnvironment, funcAst, context.strict);
+    context.setEnvironment(newFunctionEnvironment(func));
     bindFunctionDeclarations(func, callAst.arguments, context);
     expect(context.variableEnvironment.record.getBoundNames()).to.have.members([
       'arguments',

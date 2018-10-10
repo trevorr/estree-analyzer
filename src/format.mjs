@@ -1,9 +1,7 @@
-'use strict';
+import { Formatter } from './Formatter.mjs';
+import { walk } from './walk';
 
-const Formatter = require('./Formatter');
-const walk = require('./walk');
-
-function format(ast, options = {}) {
+export function format(ast, options = {}) {
   const fmt = new Formatter(options);
 
   function emitGuard(token, node, state, visit) {
@@ -899,5 +897,3 @@ function isSameLineStatement(stmt) {
   }
   return false;
 }
-
-module.exports = format;

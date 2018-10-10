@@ -1,13 +1,11 @@
-'use strict';
-
 /**
  * Main analysis module.
  * @module analyze
  * @private
  */
 
-const Scope = require('./scope');
-const types = require('./types');
+import { Scope } from './scope.mjs';
+import { arrayOf, hasKind, isNotAssignable, isFalsy, isTruthy, kindOf, union } from './types.mjs';
 
 /**
  * Analyze the given ESTree Abstract Syntax Tree. The returned object may contain
@@ -25,7 +23,7 @@ const types = require('./types');
  * @returns {Object} the analysis result
  * @alias analyze
  */
-function analyze(ast, rootScope = new Scope()) {
+export function analyze(ast, rootScope = new Scope()) {
   return visit(ast, rootScope);
 }
 
@@ -63,7 +61,7 @@ const visitors = {
   },
   Literal(ast) {
     const value = ast.value;
-    const type = types.kindOf(value); // null, string, boolean, number, object (RegExp)
+    const type = kindOf(value); // null, string, boolean, number, object (RegExp)
     return {
       type,
       value
@@ -254,7 +252,7 @@ const visitors = {
         if (elemType === undefined) {
           elemType = elemInfo.type;
         } else {
-          elemType = types.union(elemType, elemInfo.type);
+          elemType = union(elemType, elemInfo.type);
         }
       } else {
         elemType = null;
@@ -266,7 +264,7 @@ const visitors = {
       }
     }
     const result = {
-      type: types.arrayOf(elemType)
+      type: arrayOf(elemType)
     };
     if (elemValues) {
       result.value = elemValues;
@@ -463,8 +461,8 @@ const visitors = {
           const leftType = leftInfo && leftInfo.type;
           const rightType = rightInfo && rightInfo.type;
           const type = leftType === 'string' || rightType === 'string' ? 'string' :
-            types.isNotAssignable(leftType, 'string') &&
-            types.isNotAssignable(rightType, 'string') ? 'number' :
+            isNotAssignable(leftType, 'string') &&
+            isNotAssignable(rightType, 'string') ? 'number' :
             undefined;
           evaluate(type, (l, r) => l + r);
           break;
@@ -536,10 +534,10 @@ const visitors = {
     }
     switch (ast.operator) {
       case '||':
-        evaluate((l, r) => l || r, l => 'value' in l ? !!l.value : types.isTruthy(l.type));
+        evaluate((l, r) => l || r, l => 'value' in l ? !!l.value : isTruthy(l.type));
         break;
       case '&&':
-        evaluate((l, r) => l && r, l => 'value' in l ? !l.value : types.isFalsy(l.type));
+        evaluate((l, r) => l && r, l => 'value' in l ? !l.value : isFalsy(l.type));
     }
     return result;
   },
@@ -551,8 +549,8 @@ const visitors = {
     const objType = 'object';
     if (!objInfo.type) {
       objInfo.type = objType;
-    } else if (!types.hasKind(objInfo.type, 'array')) {
-      objInfo.type = types.union(objInfo.type, objType);
+    } else if (!hasKind(objInfo.type, 'array')) {
+      objInfo.type = union(objInfo.type, objType);
     }
 
     let propValue;
@@ -573,7 +571,7 @@ const visitors = {
     if (propValue !== undefined && 'value' in objInfo) {
       const value = objInfo.value[propValue];
       memberInfo = {
-        type: types.kindOf(value),
+        type: kindOf(value),
         value
       };
     }
@@ -665,10 +663,8 @@ function unionInfo(a, b) {
   if (a && b) {
     const result = {};
     if (a.type && b.type) {
-      result.type = types.union(a.type, b.type);
+      result.type = union(a.type, b.type);
     }
     return result;
   }
 }
-
-module.exports = analyze;

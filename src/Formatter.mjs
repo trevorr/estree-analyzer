@@ -1,5 +1,3 @@
-'use strict';
-
 const TokenKind = {
   Leading: 0,
   Normal: 1,
@@ -7,7 +5,7 @@ const TokenKind = {
   Space: 3
 };
 
-class Formatter {
+export class Formatter {
   constructor(options = {}) {
     this._write = options.write || process.stdout.write.bind(process.stdout);
     this._indentChar = options.indentChar || ' ';
@@ -125,5 +123,3 @@ class Formatter {
     --this._indent;
   }
 }
-
-module.exports = Formatter;

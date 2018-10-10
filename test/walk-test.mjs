@@ -1,9 +1,8 @@
-'use strict';
+import { expect } from 'chai';
 
-const chai = require('chai');
-const expect = chai.expect;
+import { walk } from '../src/walk.mjs';
+
 const acorn = require('acorn');
-const walk = require('../src/walk');
 
 const ast = acorn.parse(`var x = 1
 function f(a) { var q = x + a; return q }

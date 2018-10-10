@@ -1,9 +1,8 @@
-'use strict';
+import { expect } from 'chai';
 
-const chai = require('chai');
-const expect = chai.expect;
+import { format } from '../src/format.mjs';
+
 const acorn = require('acorn');
-const format = require('../src/format');
 
 describe('format', function () {
   it('round-trips a mess of syntax', function () {

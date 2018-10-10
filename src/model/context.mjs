@@ -1,6 +1,4 @@
-'use strict';
-
-class ExecutionContext {
+export class ExecutionContext {
   constructor(realm, variableEnvironment, lexicalEnvironment) {
     this.realm = realm;
     this.variableEnvironment = variableEnvironment;
@@ -13,11 +11,6 @@ class ExecutionContext {
   }
 }
 
-function newExecutionContext(realm) {
+export function newExecutionContext(realm) {
   return new ExecutionContext(realm, realm.globalEnv, realm.globalEnv);
 }
-
-module.exports = {
-  ExecutionContext,
-  newExecutionContext
-};

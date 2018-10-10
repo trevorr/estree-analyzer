@@ -1,8 +1,6 @@
-'use strict';
+import { expect } from 'chai';
 
-const chai = require('chai');
-const expect = chai.expect;
-const types = require('../src/types');
+import * as types from '../src/types.mjs';
 
 describe('types', function () {
   describe('arrayOf', function () {

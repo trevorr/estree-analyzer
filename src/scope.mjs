@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Scope class module.
  * @module scope
@@ -10,7 +8,7 @@
  * Represents a JavaScript variable scope.
  * @alias Scope
  */
-class Scope {
+export class Scope {
   /**
    * Constructs a new Scope.
    * 
@@ -221,5 +219,3 @@ class Scope {
     return `Scope[${this.getOwnMembers().join(', ')}]`
   }
 }
-
-module.exports = Scope;
