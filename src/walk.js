@@ -6,7 +6,7 @@
  * @private
  */
 
-function walk(ast, state, visitors) {
+function walk(ast, state, visitors, override) {
   // track ancestors if caller provides an array in state
   const ancestors = state && state.ancestors;
 
@@ -60,7 +60,7 @@ function walk(ast, state, visitors) {
     }
   }
 
-  visit(ast, state);
+  visit(ast, state, override);
 }
 
 // visitor groups
