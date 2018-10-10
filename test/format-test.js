@@ -7,7 +7,8 @@ const format = require('../src/format');
 
 describe('format', function () {
   it('round-trips a mess of syntax', function () {
-    const input = `var x = 3 * (1 + 2) + 1 ? 2 : 3;
+    const input = `'use strict';
+var x = 3 * (1 + 2) + 1 ? 2 : 3;
 const add3 = (a, b) => a + b + (1 + 2);
 ({ f() {
   console.log("hi");
@@ -50,7 +51,9 @@ class C extends Object {
 }
 f(3);
 `;
-    const ast = acorn.parse(input);
+    const ast = acorn.parse(input, {
+      ecmaVersion: 2018
+    });
     let output = '';
     format(ast, {
       write: s => output += s

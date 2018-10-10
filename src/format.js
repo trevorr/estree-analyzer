@@ -579,6 +579,10 @@ function format(ast, options = {}) {
     ForStatementBefore(node, state, visit) {
       fmt.emit('for');
       fmt.emitSpace();
+      if (node.await) {
+        fmt.emit('await');
+        fmt.emitSpace();
+      }
       fmt.emitLeading('(');
       if (node.init) {
         visit(node.init, state);

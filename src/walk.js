@@ -10,36 +10,52 @@ function walk(ast, state, visitors) {
   // track ancestors if caller provides an array in state
   const ancestors = state && state.ancestors;
 
-  function visit(node, state, group) {
-    const type = group || node.type;
+  function visit(node, state, override) {
+    const type = node.type;
+    const visitorTypes = [];
+    if (override) {
+      visitorTypes.push(override);
+    } else if (type in groups) {
+      visitorTypes.push(...groups[type]);
+    }
+    visitorTypes.push(type);
 
-    // due to groups, we may visit the same node repeatedly
-    const newNode = ancestors && node !== ancestors[ancestors.length - 1];
-    if (newNode) {
+    if (ancestors) {
       ancestors.push(node);
     }
 
-    let descend = true;
-    const beforeVisitor = visitors[type + 'Before'];
-    if (beforeVisitor) {
-      // before-visitors may skip subtrees or apply their own walker
-      descend = beforeVisitor(node, state, visit);
+    // invoke before-visitors from least specific to most
+    let beforeResult;
+    for (const vtype of visitorTypes) {
+      const beforeVisitor = visitors[vtype + 'Before'];
+      if (beforeVisitor) {
+        // before-visitors may skip subtrees or apply their own walker
+        beforeResult = beforeVisitor(node, state, visit);
+        if (beforeResult === false) break;
+        if (beforeResult) state = beforeResult;
+      }
     }
 
-    if (descend !== false) {
-      const walker = walkers[type];
+    if (beforeResult !== false) {
+      // sometimes overrides have their own walker, sometimes not
+      const walker = (override && walkers[override]) || walkers[type];
       if (!walker) {
         throw new Error(`Unhandled AST node type '${type}'`);
       }
       walker(node, state, visit);
 
-      const afterVisitor = visitors[type];
-      if (afterVisitor) {
-        afterVisitor(node, state);
+      // invoke after-visitors from most specific to least
+      visitorTypes.reverse();
+      for (const vtype of visitorTypes) {
+        const afterVisitor = visitors[vtype];
+        if (afterVisitor) {
+          const afterResult = afterVisitor(node, state);
+          if (afterResult) state = afterResult;
+        }
       }
     }
 
-    if (newNode) {
+    if (ancestors) {
       ancestors.pop();
     }
   }
@@ -47,58 +63,79 @@ function walk(ast, state, visitors) {
   visit(ast, state);
 }
 
+// visitor groups
+const ModuleDeclaration = 'ModuleDeclaration';
+const Declaration = 'Declaration';
+const Function = 'Function';
+const Class = 'Class';
+const Statement = 'Statement';
+const Expression = 'Expression';
+
+// context-dependent node type overrides
+const Directive = 'Directive';
+const FunctionBody = 'FunctionBody';
+const Pattern = 'Pattern';
+const AssignmentProperty = 'AssignmentProperty';
+
+// maps node types to visitor group names in order of increasing specificity
+const groups = {};
+
+// maps node types to walker functions
 const walkers = {};
 
-walkers.Program = walkExecutionContextBody;
-
-const DirectiveGroup = 'Directive';
-walkers[DirectiveGroup] = (node, state, visit) =>
-  visit(node, state, StatementGroup);
+walkers.Program =
+  walkers.FunctionBody = (node, state, visit) => {
+    for (const stmt of node.body) {
+      visit(stmt, state, stmt.directive ? Directive : undefined);
+    }
+  };
 
 // imports
+
+groups.ImportDeclaration =
+  groups.ExportNamedDeclaration =
+  groups.ExportDefaultDeclaration =
+  groups.ExportAllDeclaration = [ModuleDeclaration];
 
 walkers.ImportDeclaration = (node, state, visit) => {
   for (const spec of node.specifiers) {
     visit(spec, state);
   }
-  visit(node.source, state, ExpressionGroup);
+  visit(node.source, state);
 };
 walkers.ImportSpecifier = (node, state, visit) => {
-  visit(node.local, state, PatternGroup);
-  visit(node.imported, state, PatternGroup);
+  visit(node.local, state);
+  visit(node.imported, state);
 };
 walkers.ImportDefaultSpecifier =
   walkers.ImportNamespaceSpecifier = (node, state, visit) =>
-  visit(node.local, state, PatternGroup);
+  visit(node.local, state);
 
 // exports
 
 walkers.ExportNamedDeclaration = (node, state, visit) => {
   if (node.declaration) {
-    visit(node.declaration, state, DeclarationGroup);
+    visit(node.declaration, state);
   }
   for (const spec of node.specifiers) {
     visit(spec, state);
   }
   if (node.source) {
-    visit(node.source, state, ExpressionGroup);
+    visit(node.source, state);
   }
 };
 walkers.ExportSpecifier = (node, state, visit) => {
-  visit(node.local, state, PatternGroup);
-  visit(node.exported, state, PatternGroup);
+  visit(node.local, state);
+  visit(node.exported, state);
 };
 walkers.ExportDefaultDeclaration = (node, state, visit) =>
-  visit(node.declaration, state, isDeclaration(node.declaration) ? DeclarationGroup : ExpressionGroup);
+  visit(node.declaration, state);
 walkers.ExportAllDeclaration = (node, state, visit) =>
-  visit(node.source, state, ExpressionGroup);
-
-// declarations:
-
-const DeclarationGroup = 'Declaration';
-walkers[DeclarationGroup] = revisit;
+  visit(node.source, state);
 
 // variables
+
+groups.VariableDeclaration = [Statement, Declaration];
 
 walkers.VariableDeclaration = (node, state, visit) => {
   for (const decl of node.declarations) {
@@ -106,48 +143,45 @@ walkers.VariableDeclaration = (node, state, visit) => {
   }
 };
 walkers.VariableDeclarator = (node, state, visit) => {
-  visit(node.id, state, PatternGroup);
+  visit(node.id, state, Pattern);
   if (node.init) {
-    visit(node.init, state, ExpressionGroup);
+    visit(node.init, state);
   }
 };
 
 // functions
 
-const FunctionGroup = 'Function';
-walkers[FunctionGroup] = (node, state, visit) => {
-  if (node.id) {
-    visit(node.id, state, PatternGroup);
-  }
-  for (const param of node.params) {
-    visit(param, state, PatternGroup);
-  }
-  if (node.expression) {
-    visit(node.body, state, ExpressionGroup);
-  } else {
-    walkExecutionContextBody(node.body, state, visit);
-  }
-};
+groups.FunctionDeclaration = [Declaration, Function];
+groups.FunctionExpression =
+  groups.ArrowFunctionExpression = [Expression, Function];
+
 walkers.FunctionDeclaration =
   walkers.FunctionExpression =
-  walkers.ArrowFunctionExpression = (node, state, visit) =>
-  visit(node, state, FunctionGroup);
+  walkers.ArrowFunctionExpression = (node, state, visit) => {
+    if (node.id) {
+      visit(node.id, state, Pattern);
+    }
+    for (const param of node.params) {
+      visit(param, state, Pattern);
+    }
+    visit(node.body, state, !node.expression ? FunctionBody : undefined);
+  };
 
 // classes
 
-const ClassGroup = 'Class';
-walkers[ClassGroup] = (node, state, visit) => {
-  if (node.id) {
-    visit(node.id, state, PatternGroup);
-  }
-  if (node.superClass) {
-    visit(node.superClass, state, ExpressionGroup);
-  }
-  visit(node.body, state);
-};
+groups.ClassDeclaration = [Declaration, Class];
+groups.ClassExpression = [Expression, Class];
+
 walkers.ClassDeclaration =
-  walkers.ClassExpression = (node, state, visit) =>
-  visit(node, state, ClassGroup);
+  walkers.ClassExpression = (node, state, visit) => {
+    if (node.id) {
+      visit(node.id, state, Pattern);
+    }
+    if (node.superClass) {
+      visit(node.superClass, state);
+    }
+    visit(node.body, state);
+  };
 walkers.ClassBody = (node, state, visit) => {
   for (const def of node.body) {
     visit(def, state);
@@ -155,125 +189,147 @@ walkers.ClassBody = (node, state, visit) => {
 };
 walkers.MethodDefinition =
   walkers.Property = (node, state, visit) => {
-    visit(node.key, state, node.computed ? ExpressionGroup : PatternGroup);
-    visit(node.value, state, ExpressionGroup);
+    visit(node.key, state, !node.computed ? Pattern : undefined);
+    visit(node.value, state);
   }
 
 // statements
 
-const StatementGroup = 'Statement';
-walkers[StatementGroup] = (node, state, visit) => {
-  switch (node.type) {
-    case 'FunctionDeclaration':
-    case 'VariableDeclaration':
-    case 'ClassDeclaration':
-      return visit(node, state, DeclarationGroup);
-  }
-  visit(node, state);
-};
+groups.EmptyStatement =
+  groups.DebuggerStatement =
+  groups.BreakStatement =
+  groups.ContinueStatement =
+  groups.ExpressionStatement =
+  groups.BlockStatement =
+  groups.WithStatement =
+  groups.ReturnStatement =
+  groups.LabeledStatement =
+  groups.IfStatement =
+  groups.SwitchStatement =
+  groups.ThrowStatement =
+  groups.TryStatement =
+  groups.WhileStatement =
+  groups.DoWhileStatement =
+  groups.ForStatement =
+  groups.ForInStatement =
+  groups.ForOfStatement = [Statement];
+
 walkers.EmptyStatement =
   walkers.DebuggerStatement =
   walkers.BreakStatement =
   walkers.ContinueStatement = ignore;
 walkers.ExpressionStatement =
   walkers.ParenthesizedExpression = (node, state, visit) =>
-  visit(node.expression, state, ExpressionGroup);
+  visit(node.expression, state);
 walkers.BlockStatement = (node, state, visit) => {
   for (const stmt of node.body) {
-    visit(stmt, state, StatementGroup);
+    visit(stmt, state);
   }
 };
 walkers.WithStatement = (node, state, visit) => {
-  visit(node.object, state, ExpressionGroup);
-  visit(node.body, state, StatementGroup);
+  visit(node.object, state);
+  visit(node.body, state);
 };
 walkers.ReturnStatement =
   walkers.YieldExpression =
   walkers.AwaitExpression = (node, state, visit) => {
     if (node.argument) {
-      visit(node.argument, state, ExpressionGroup);
+      visit(node.argument, state);
     }
   };
 walkers.LabeledStatement = (node, state, visit) =>
-  visit(node.body, state, StatementGroup);
+  visit(node.body, state);
 walkers.IfStatement = (node, state, visit) => {
-  visit(node.test, state, ExpressionGroup);
-  visit(node.consequent, state, StatementGroup);
+  visit(node.test, state);
+  visit(node.consequent, state);
   if (node.alternate) {
-    visit(node.alternate, state, StatementGroup);
+    visit(node.alternate, state);
   }
 };
 walkers.SwitchStatement = (node, state, visit) => {
-  visit(node.discriminant, state, ExpressionGroup);
+  visit(node.discriminant, state);
   for (const c of node.cases) {
     visit(c, state);
   }
 };
 walkers.SwitchCase = (node, state, visit) => {
   if (node.test) {
-    visit(node.test, state, ExpressionGroup);
+    visit(node.test, state);
   }
   for (const stmt of node.consequent) {
-    visit(stmt, state, StatementGroup);
+    visit(stmt, state);
   }
 };
 walkers.ThrowStatement = (node, state, visit) => {
-  visit(node.argument, state, ExpressionGroup);
+  visit(node.argument, state);
 };
 walkers.TryStatement = (node, state, visit) => {
-  visit(node.block, state, StatementGroup);
+  visit(node.block, state);
   if (node.handler) {
     visit(node.handler, state);
   }
   if (node.finalizer) {
-    visit(node.finalizer, state, StatementGroup);
+    visit(node.finalizer, state);
   }
 };
 walkers.CatchClause = (node, state, visit) => {
   if (node.param) {
-    visit(node.param, state, PatternGroup);
+    visit(node.param, state, Pattern);
   }
-  visit(node.body, state, StatementGroup);
+  visit(node.body, state);
 };
 walkers.WhileStatement =
   walkers.DoWhileStatement = (node, state, visit) => {
-    visit(node.test, state, ExpressionGroup);
-    visit(node.body, state, StatementGroup);
+    visit(node.test, state);
+    visit(node.body, state);
   };
 walkers.ForStatement = (node, state, visit) => {
   if (node.init) {
-    visit(node.init, state, ForInitGroup);
+    visit(node.init, state);
   }
   if (node.test) {
-    visit(node.test, state, ExpressionGroup);
+    visit(node.test, state);
   }
   if (node.update) {
-    visit(node.update, state, ExpressionGroup);
+    visit(node.update, state);
   }
-  visit(node.body, state, StatementGroup);
+  visit(node.body, state);
 };
 walkers.ForInStatement =
   walkers.ForOfStatement = (node, state, visit) => {
-    visit(node.left, state, ForInitGroup);
-    visit(node.right, state, ExpressionGroup);
-    visit(node.body, state, StatementGroup);
+    visit(node.left, state, node.type !== 'VariableDeclaration' ? Pattern : undefined);
+    visit(node.right, state);
+    visit(node.body, state);
   };
-const ForInitGroup = 'ForInit';
-walkers[ForInitGroup] = (node, state, visit) => {
-  visit(node, state, node.type === 'VariableDeclaration' ? DeclarationGroup : ExpressionGroup);
-};
 
 // expressions
 
-const ExpressionGroup = 'Expression';
-walkers[ExpressionGroup] = revisit;
-walkers.ThisExpression =
-  walkers.Super =
-  walkers.MetaProperty = ignore;
+groups.ArrayExpression =
+  groups.ObjectExpression =
+  groups.UnaryExpression =
+  groups.UpdateExpression =
+  groups.BinaryExpression =
+  groups.LogicalExpression =
+  groups.AssignmentExpression =
+  groups.MemberExpression =
+  groups.ConditionalExpression =
+  groups.CallExpression =
+  groups.NewExpression =
+  groups.SequenceExpression =
+  groups.YieldExpression =
+  groups.AwaitExpression =
+  groups.Identifier =
+  groups.Literal =
+  groups.ThisExpression =
+  groups.MetaProperty =
+  groups.TemplateLiteral =
+  groups.TaggedTemplateExpression =
+  groups.ParenthesizedExpression = [Expression];
+
 walkers.ArrayExpression = (node, state, visit) => {
   for (const element of node.elements) {
     if (element) {
-      visit(element, state, ExpressionGroup);
+      visit(element, state);
     }
   }
 };
@@ -285,41 +341,46 @@ walkers.ObjectExpression = (node, state, visit) => {
 walkers.UnaryExpression =
   walkers.UpdateExpression =
   walkers.SpreadElement = (node, state, visit) => {
-    visit(node.argument, state, ExpressionGroup);
+    visit(node.argument, state);
   };
 walkers.BinaryExpression =
   walkers.LogicalExpression = (node, state, visit) => {
-    visit(node.left, state, ExpressionGroup);
-    visit(node.right, state, ExpressionGroup);
+    visit(node.left, state);
+    visit(node.right, state);
   };
 walkers.AssignmentExpression =
   walkers.AssignmentPattern = (node, state, visit) => {
-    visit(node.left, state, PatternGroup);
-    visit(node.right, state, ExpressionGroup);
+    visit(node.left, state, Pattern);
+    visit(node.right, state);
   };
 walkers.MemberExpression = (node, state, visit) => {
-  visit(node.object, state, ExpressionGroup);
-  visit(node.property, state, node.computed ? ExpressionGroup : PatternGroup);
+  visit(node.object, state);
+  visit(node.property, state, !node.computed ? Pattern : undefined);
 };
 walkers.ConditionalExpression = (node, state, visit) => {
-  visit(node.test, state, ExpressionGroup);
-  visit(node.consequent, state, ExpressionGroup);
-  visit(node.alternate, state, ExpressionGroup);
+  visit(node.test, state);
+  visit(node.consequent, state);
+  visit(node.alternate, state);
 };
 walkers.CallExpression =
   walkers.NewExpression = (node, state, visit) => {
-    visit(node.callee, state, ExpressionGroup);
+    visit(node.callee, state);
     if (node.arguments) {
       for (const arg of node.arguments) {
-        visit(arg, state, ExpressionGroup);
+        visit(arg, state);
       }
     }
   };
 walkers.SequenceExpression = (node, state, visit) => {
   for (const expr of node.expressions) {
-    visit(expr, state, ExpressionGroup);
+    visit(expr, state);
   }
 };
+walkers.Identifier =
+  walkers.Literal =
+  walkers.ThisExpression =
+  walkers.Super =
+  walkers.MetaProperty = ignore;
 
 // template literals
 
@@ -333,75 +394,30 @@ walkers.TemplateLiteral = (node, state, visit) => {
 };
 walkers.TemplateElement = ignore;
 walkers.TaggedTemplateExpression = (node, state, visit) => {
-  visit(node.tag, state, ExpressionGroup);
-  visit(node.quasi, state, ExpressionGroup);
+  visit(node.tag, state);
+  visit(node.quasi, state);
 };
 
 // patterns
 
-const PatternGroup = 'Pattern';
-walkers[PatternGroup] = (node, state, visit) => {
-  switch (node.type) {
-    case 'Identifier':
-      return visit(node, state, VariablePatternGroup);
-    case 'MemberExpression':
-      return visit(node, state, MemberPatternGroup);
-  }
-  visit(node, state);
-};
-const VariablePatternGroup = 'VariablePattern';
-walkers[VariablePatternGroup] = revisit;
-const MemberPatternGroup = 'MemberPattern';
-walkers[MemberPatternGroup] = revisit;
-walkers.Identifier =
-  walkers.Literal = ignore;
 walkers.ArrayPattern = (node, state, visit) => {
   for (const element of node.elements) {
     if (element) {
-      visit(element, state, PatternGroup);
+      visit(element, state, Pattern);
     }
   }
 };
 walkers.ObjectPattern = (node, state, visit) => {
   for (const prop of node.properties) {
-    switch (prop.type) {
-      case 'Property':
-        visit(prop.key, state, prop.computed ? ExpressionGroup : PatternGroup);
-        visit(prop.value, state, PatternGroup);
-        break;
-      case 'RestElement':
-        visit(prop.argument, state, PatternGroup);
-    }
+    visit(prop, state, node.type === 'Property' ? AssignmentProperty : undefined);
   }
 };
+walkers.AssignmentProperty = (node, state, visit) => {
+  visit(node.key, state, !node.computed ? Pattern : undefined);
+  visit(node.value, state, Pattern);
+};
 walkers.RestElement = (node, state, visit) =>
-  visit(node.argument, state, PatternGroup);
-
-// helpers
-
-function walkExecutionContextBody(node, state, visit) {
-  let checkDirective = true;
-  for (const stmt of node.body) {
-    visit(stmt, state,
-      checkDirective && (checkDirective = isDirective(stmt)) ?
-      DirectiveGroup : StatementGroup);
-  }
-}
-
-function isDeclaration(node) {
-  return node.id || node.type === 'VariableDeclaration';
-}
-
-function isDirective(stmt) {
-  return stmt.type === 'ExpressionStatement' &&
-    stmt.expression.type === 'Literal' &&
-    typeof stmt.expression.value === 'string';
-}
-
-// visit specific type rather than group
-function revisit(node, state, visit) {
-  visit(node, state);
-}
+  visit(node.argument, state, Pattern);
 
 function ignore() {}
 

@@ -34,7 +34,7 @@ describe('walk', function () {
     const items = [];
     walk(ast, undefined, {
       Statement(node) {
-        if (!node.id && node.type !== 'VariableDeclaration') {
+        if (node.type !== 'VariableDeclaration') {
           items.push(node);
         }
       }
@@ -126,6 +126,7 @@ describe('walk', function () {
       [
         'Program',
         'FunctionDeclaration',
+        'BlockStatement',
         'VariableDeclaration',
         'VariableDeclarator',
         'Identifier'
@@ -133,6 +134,7 @@ describe('walk', function () {
       [
         'Program',
         'FunctionDeclaration',
+        'BlockStatement',
         'ReturnStatement',
         'Identifier'
       ]
