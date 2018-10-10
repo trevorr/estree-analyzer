@@ -1,6 +1,6 @@
-import { walk } from '../walk.mjs';
-import { newDeclarativeEnvironment } from '../model/environment.mjs';
-import { newFunction, ThisMode } from '../model/function.mjs';
+import { walk } from '../walk';
+import { newDeclarativeEnvironment } from '../model/environment';
+import { newFunction, ThisMode } from '../model/function';
 
 export function bindFunctionDeclarations(func, args, execContext) {
 

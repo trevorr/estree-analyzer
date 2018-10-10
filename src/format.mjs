@@ -1,4 +1,4 @@
-import { Formatter } from './Formatter.mjs';
+import { Formatter } from './Formatter';
 import { walk } from './walk';
 
 export function format(ast, options = {}) {

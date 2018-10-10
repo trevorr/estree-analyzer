@@ -4,8 +4,8 @@
  * @private
  */
 
-import { Scope } from './scope.mjs';
-import { arrayOf, hasKind, isNotAssignable, isFalsy, isTruthy, kindOf, union } from './types.mjs';
+import { Scope } from './scope';
+import { arrayOf, hasKind, isNotAssignable, isFalsy, isTruthy, kindOf, union } from './types';
 
 /**
  * Analyze the given ESTree Abstract Syntax Tree. The returned object may contain

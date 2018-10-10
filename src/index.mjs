@@ -1,5 +1,5 @@
 'use strict';
 
-export { analyze } from './analyze.mjs';
-export { format } from './format.mjs';
-export { Scope } from './scope.mjs';
+export { analyze } from './analyze';
+export { format } from './format';
+export { Scope } from './scope';

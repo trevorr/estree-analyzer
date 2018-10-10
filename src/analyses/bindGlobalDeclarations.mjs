@@ -1,5 +1,5 @@
-import { walk } from '../walk.mjs';
-import { newFunction } from '../model/function.mjs';
+import { walk } from '../walk';
+import { newFunction } from '../model/function';
 
 export function bindGlobalDeclarations(scriptAst, execContext) {
 
