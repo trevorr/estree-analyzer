@@ -367,7 +367,7 @@ const visitors = {
         evaluate('boolean', v => !v);
         break;
       case 'delete':
-        evaluate('boolean', v => true);
+        evaluate('boolean', _ => true);
         break;
       case 'typeof':
         evaluate('string', v => typeof v);
@@ -630,6 +630,12 @@ const visitors = {
       };
     }
   }
+}
+function declare(ast, scope) {
+  const name = ast.id.name;
+  return scope.addOwnMember(name, {
+    name
+  });
 }
 
 function analyzeBody(ast, scope) {
