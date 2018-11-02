@@ -41,7 +41,8 @@ export const TypeKind = {
   // meta-types
   'array': 'array',
   'union': 'union',
-  'any': 'any'
+  'any': 'any',
+  'void': 'void'
 };
 Object.freeze(TypeKind);
 
@@ -122,7 +123,7 @@ export function hasKind(type, kind) {
  */
 export function isFalsy(type) {
   return Array.isArray(type) ?
-    type.length > 0 && type.every(isFalsy) : ['undefined', 'null'].includes(getKind(type));
+    type.length > 0 && type.every(isFalsy) : ['undefined', 'null', 'void'].includes(getKind(type));
 }
 
 /**
@@ -193,6 +194,7 @@ export function isAssignable(target, source) {
   const sourceKind = getKind(source);
   switch (targetKind) {
     case undefined: // unknown type
+    case 'void':
       return false;
     case 'undefined':
     case 'null':
